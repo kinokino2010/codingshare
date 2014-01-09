@@ -116,6 +116,7 @@ var socketio=require('socket.io');
 var io=socketio.listen(server);
 io.set(‘transports’,['xhr-polling']);
 
+
 var sessionSockets=new SessionSockets(io,store,parseCookie);
 room.listen(io,sessionSockets);
 
