@@ -75,23 +75,27 @@
 
 					if( session && ('userid' in session) ) {
 						this_.client(io,socket,session);
-
 						var user=this_.userlist.get(session.userid);
-						var data={
-							owner:this_.userlist.owner,
-							list:this_.userlist.names()
-						};
-				        // 自分に送る
-				        console.log("emit","login");
-				        socket.emit("login",{data:user});
+						if(user){
+							var data={
+								owner:this_.userlist.owner,
+								list:this_.userlist.names()
+							};
+					        // 自分に送る
+					        console.log("emit","login");
+					        socket.emit("login",{data:user});
 
-						// 全員に送る
-				        console.log("emit","userlist");
-						io.sockets.emit("userlist",{data:data});
+							// 全員に送る
+					        console.log("emit","userlist");
+							io.sockets.emit("userlist",{data:data});
 
-				        // 自分に送る
-				        console.log("emit","document");
-				        socket.emit("document",{data:this_.document.getValue()});
+					        // 自分に送る
+					        console.log("emit","document");
+					        socket.emit("document",{data:this_.document.getValue()});
+						}else{
+					        console.log("user info not found");
+							socket.disconnect();
+						}
 				    }
 				}
 			});
