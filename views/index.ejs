@@ -4,130 +4,27 @@
     <title><%= title %></title>
     <link rel='stylesheet' href='/stylesheets/style.css' />
     <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
-  <style type="text/css" media="screen">
-    #editor { 
-      height:400px;
-    }
-  </style>
     <script src="http://code.jquery.com/jquery.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="/socket.io/socket.io.js" type="text/javascript" ></script>
     <script src="src/ace.js" type="text/javascript" charset="utf-8"></script>
-    <script>
-
-      var user;
-      var editor;
-      var socket;
-      var doc;
-
-    	window.onload=function(){
-        editor = ace.edit("editor");
-        editor.setTheme("ace/theme/twilight");
-
-  			socket = io.connect('/');
-
-  			socket.on('edit', function (e) {
-          if(!user.owner){
-            editor.getSession().getDocument().applyDeltas([e.data]);
-          }
-  			});
-        socket.on('login',function(e){
-          user=e.data;
-          console.log('user',user);
-        });
-        socket.on('userlist',function(e){
-          setUserList(e.data);
-        });
-        socket.on('document',function(e){
-          setEditor(e.data);
-        });
-        socket.on('disconnect',function(reason){
-          $('.alert')
-            .text('disconnect')
-            .show();
-        });
-
-        $('#changeowner').click(function(){
-        console.log('test');
-          var selectid=$('#userlist li.label').attr('userid');
-          console.log('selectid',selectid)
-          if(selectid){
-            socket.emit("changeowner",{data : selectid});
-          }
-        });
-    	};
-
-      function setUserList(data){
-        var html='<li><i></i><span></span></li>';
-        $('#userlist').empty();
-        for( id in data.list ){
-          $('#userlist').append(html);
-          if( id==data.owner ){
-            $('#userlist li:last i').attr('class','icon-pencil');
-          }else{
-            $('#userlist li:last i').attr('class','icon-');
-          }
-          if( id==user.id ){
-            $('#userlist li:last span').attr('class','text-info');
-          }
-          $('#userlist li:last').attr('userid',id);
-          $('#userlist li:last span').text(data.list[id]);
+    <script type="text/javascript" >
+      function check(){
+        var name=$('#roomtitle').val().trim();
+        if( name.length==0 ){
+          return false;
         }
-        if( user.id==data.owner ){
-          user.owner=true;
-          editor.setReadOnly(false);
-          $('#changeowner').show();
-        }else{
-          user.owner=false;
-          editor.setReadOnly(true);
-          $('#changeowner').hide();
-        }
-
-        if( user.owner ){
-          $('#userlist li').click(function(e){
-            $('#userlist li').attr('class','');
-            $(this).addClass('label');
-          });
-        }
+        return true;
       }
-
-      function setEditor(text){
-
-        var ses=ace.createEditSession(text,"ace/mode/c_cpp");
-
-        editor.setSession(ses);
-//        editor.getSession().setMode("ace/mode/javascript");
-
-        var anc=ses.getDocument().createAnchor(3,0);
-
-        ses.getDocument().on("change", function(e){
-          if(user.owner){
-            socket.emit("edit",{data : e.data});
-          }
-        })
-      }
-
     </script>
-
-
   </head>
   <body>
     <h1><%= title %></h1>
     <p>Welcome to <%= title %></p>
-    <p>User name is <%= user %></p>
-    <div class='row-fluid'>
-      <div class='span9'>
-        <div class="alert alert-error" style='display:none;'>
-        </div>    
-        <div id="editor"></div>
-      </div>
-      <div class='span3'>
-        <table class='table table-condensed'>
-          <ul  id='userlist' class="unstyled">
-          </ul>
-          <a class="btn btn-small" type="button" id='changeowner'>Change Owner</a>          
-        </table>
-      </div>
-    </div>
-  </body>
+    <p>新しい部屋を作る</p>
+    <form class="form-inline" method='post' action='/create' onSubmit='return check();'>
+      <input type="text" id="roomtitle" name='roomtitle' placeholder="部屋の名前">
+      <button type="submit" class="btn">作成</button>
+    </form>
+    </body>
 </html>

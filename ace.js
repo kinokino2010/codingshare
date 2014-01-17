@@ -232,10 +232,6 @@
         return p1.row - p2.row || p1.column - p2.column;
     };
 
-    exports.Range = Range;
-})(module.exports);
-
-(function(exports){
     var Range = exports.Range;
 
     var Document = function(text) {

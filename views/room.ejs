@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+  <style type="text/css" media="screen">
+    #editor { 
+      height:400px;
+      display:node;
+    }
+  </style>
+    <script src="http://code.jquery.com/jquery.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="/socket.io/socket.io.js" type="text/javascript" ></script>
+    <script src="src/ace.js" type="text/javascript" charset="utf-8"></script>
+<style type="text/css">
+        body { font-family:Lucida Sans, Lucida Sans Unicode, Arial, Sans-Serif; font-size:13px; margin:0px auto;}
+        #tabs { margin:0; padding:0; list-style:none; overflow:hidden; }
+        #tabs li { float:left; display:block; padding:5px; background-color:#bbb; margin-right:5px;}
+        #tabs li a { color:#fff; text-decoration:none; }
+        #tabs li.current { background-color:#e1e1e1;}
+        #tabs li.current a { color:#000; text-decoration:none; }
+        #tabs li a.remove { color:#f00; margin-left:10px;}
+        #content { background-color:#e1e1e1;}
+        #content p { margin: 0; padding:20px 20px 100px 20px;}
+        
+        #main { width:900px; margin:0px auto; overflow:hidden;background-color:#F6F6F6; margin-top:20px;
+             -moz-border-radius:10px;  -webkit-border-radius:10px; padding:30px;}
+        #wrapper, #doclist { float:left; margin:0 20px 0 0;}
+        #doclist { width:150px; border-right:solid 1px #dcdcdc;}
+        #doclist ul { margin:0; list-style:none;}
+        #doclist li { margin:10px 0; padding:0;}
+        #documents { margin:0; padding:0;}
+        
+        #wrapper { width:700px; margin-top:20px;}
+            
+        #header{ background-color:#F6F6F6; width:900px; margin:0px auto; margin-top:20px;
+             -moz-border-radius:10px;  -webkit-border-radius:10px; padding:30px; position:relative;}
+        #header h2 {font-size:16px; font-weight:normal; margin:0px; padding:0px;}
+
+    </style>
+        <script>
+
+      var user={};
+      var editor;
+      var socket;
+      var doc;
+
+    	window.onload=function(){
+        editor = ace.edit("editor");
+        editor.setTheme("ace/theme/twilight");
+
+  			socket = io.connect('/room<%= roomid %>');
+
+  			socket.on('edit', function (e) {
+          if(!user.owner){
+            editor.getSession().getDocument().applyDeltas(e.data);
+          }
+  			});
+        socket.on('login',function(e){
+          console.log('login',e);
+          user=e.data;
+        });
+        socket.on('userlist',function(e){
+          console.log('userlist',e);
+          setUserList(e.data);
+        });
+        socket.on('document',function(e){
+          console.log('document',e);
+          setEditor(e.data);
+        });
+        socket.on('disconnect',function(reason){
+          $('.alert')
+            .text('disconnect')
+            .show();
+        });
+
+        $('#changeowner').click(function(){
+          editor.setReadOnly(true);
+          idle();
+          var selectid=$('#userlist li.label').attr('userid');
+          console.log('selectid',selectid)
+          if(selectid){
+            socket.emit("changeowner",{data : selectid});
+          }
+        });
+
+        idle();
+        setTab();
+    	};
+
+      function setTab(){
+        $("#documents a").click(function() {
+            addTab($(this));
+        });
+
+        $('#tabs').on('click', 'a.tab', function() {
+            console.log('tab');
+
+            // Get the tab name
+            var contentname = $(this).attr("id") + "_content";
+            // hide all other tabs
+            $("#content p").hide();
+            $("#tabs li").removeClass("current");
+            // show current tab
+            $("#" + contentname).show();
+            $(this).parent().addClass("current");
+        });
+        $('#tabs').on('click', 'a.remove', function() {
+            console.log('remove');
+
+            // Get the tab name
+            var tabid = $(this).parent().find(".tab").attr("id");
+            // remove tab and related content
+            var contentname = tabid + "_content";
+            $("#" + contentname).remove();
+            $(this).parent().remove();
+        });        
+      }
+
+      function addTab(link) {
+          // hide other tabs
+          $("#tabs li").removeClass("current");
+          $("#content p").hide();
+          
+          // add new tab and related content
+          $("#tabs").append("<li class='current'><a class='tab' id='" +
+              $(link).attr("rel") + "' href='#'>" + $(link).html() +
+              "</a><a href='#' class='remove'>x</a></li>");
+          $("#content").append("<p id='" + $(link).attr("rel") + "_content'>" +
+              $(link).attr("title") + "</p>");
+          // set the newly added tab as curren
+          $("#" + $(link).attr("rel") + "_content").show();
+      }
+
+      var changes=[];
+      var timer_id;
+      function addChange(deltas){
+        changes=changes.concat(deltas);
+        clearTimeout(timer_id);
+        timer_id=setTimeout(idle,1000);
+      }
+
+      function idle(){
+        console.log("idle");
+        if(socket && user.owner && changes.length>0){
+          socket.emit("edit",{data : changes});
+          changes=[];
+        }
+      }
+
+      function setUserList(data){
+        var html='<li><i></i><span></span></li>';
+        $('#userlist').empty();
+        for( id in data.list ){
+          $('#userlist').append(html);
+          if( id==data.owner ){
+            $('#userlist li:last i').attr('class','icon-pencil');
+          }else{
+            $('#userlist li:last i').attr('class','icon-');
+          }
+          if( id==user.id ){
+            $('#userlist li:last span').attr('class','text-info');
+          }
+          $('#userlist li:last').attr('userid',id);
+          $('#userlist li:last span').text(data.list[id]);
+        }
+        if( user.id==data.owner ){
+          user.owner=true;
+          editor.setReadOnly(false);
+          $('#changeowner').show();
+        }else{
+          user.owner=false;
+          editor.setReadOnly(true);
+          $('#changeowner').hide();
+        }
+
+        if( user.owner ){
+          $('#userlist li').click(function(e){
+            $('#userlist li').attr('class','');
+            $(this).addClass('label');
+          });
+        }
+      }
+
+      function setEditor(text){
+        $('#editor').show();
+        var ses=ace.createEditSession(text,"ace/mode/c_cpp");
+        editor.setSession(ses);
+        editor.on("change", function(e){
+          if(user.owner){
+            addChange(e.data);
+//            socket.emit("edit",{data : e.data});
+          }
+        })
+      }
+
+    </script>
+
+
+  </head>
+  <body>
+    <h1><%= title %></h1>
+    <p>Welcome to <%= title %></p>
+    <div class='row-fluid'>
+      <div class='span9'>
+        <div class="alert alert-error" style='display:none;'>
+        </div>    
+        <div id="wrapper">
+            <ul id="tabs">
+                <!-- Tabs go here -->
+            </ul>
+            <div id="content">
+                <!-- Tab content goes here -->
+              <div id="editor"></div>
+            </div>
+        </div>
+
+
+
+
+      </div>
+      <div class='span3'>
+        <table class='table table-condensed'>
+          <ul  id='userlist' class="unstyled">
+          </ul>
+          <a class="btn btn-small" type="button" id='changeowner'>Change Owner</a>          
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

@@ -5,7 +5,6 @@
 
 var express = require('express');
 var routes = require('./routes');
-//var user = require('./routes/user');
 var http = require('http');
 var path = require('path');
 var connect = express.connect;//require('connect');
@@ -13,7 +12,7 @@ var SessionSockets=require('session.socket.io');
 
 var app = express();
 
-var codeshare=require('./codeshare');
+var codeshare=require('./codingshare');
 
 // all environments
 app.set('port', process.env.PORT || 8080);
@@ -43,70 +42,57 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-//var document=new ace.Document("");
+// var room=new codeshare.Room();
 
-var room=new codeshare.Room();
+// app.post('/login',function(req,res){
+// 	var user=room.userlist.add(req.body.name);
+// 	req.session.userid=user.id;
+// 	res.redirect('/');
+// });
 
-
-// var users={
-// 	data:[],
-// 	count:0,
-// 	owner:-1,
-// 	add:function(name){
-// 		var user={
-// 			id:this.data.length,
-// 			name:name
-// 		}
-// 		if( this.count==0 ){
-// 			this.owner=user.id;
-// 		}
-// 		this.data[this.data.length]=user;
-// 		this.count++;
-
-// 		console.log( 'add user', name );
-// 		return user;
-// 	},
-// 	get:function(id){
-// 		return this.data[id];
-// 	},
-// 	remove:function(user){
-// 		console.log( 'remove user', user.name );
-
-// 		delete this.data[user.id];
-// 		if(this.owner==user.id){
-// 			this.owner=-1;
-// 			for( i in this.data ){
-// 				this.owner=i;
-// 				break;
-// 			}
-// 		}
-// 		this.count--;
-// 	},
-// 	names:function(){
-// 		var obj={};
-// 		for( i in this.data ){
-// 			obj[i]=this.data[i].name;
-// 		}
-// 		return obj;
-// 	}
-// };
-
-app.post('/login',function(req,res){
-	var user=room.userlist.add(req.body.name);
-	req.session.userid=user.id;
-	res.redirect('/');
+app.get('/', routes.index);
+app.post('/create', function(req,res){
+	var room=codeshare.create(req.body.roomtitle);
+	room.listen(io,sessionSockets);
+	res.redirect('/room-'+room.id);
 });
 
-//app.get('/', routes.index);
-app.get('/', function(req, res){
-	var userid=req.session.userid;
-	var user=room.userlist.get(userid);
-	if( user==undefined ){
-		res.render('login.ejs', { title:"Code Share" });
+app.get(/^\/room\-([0-9a-z]+)/,function(req,res){
+	var roomid=req.params[0];
+	var room=codeshare.getRoom(roomid);
+	if(room){
+		var user=room.userlist.get(req.session.userid);
+		if(user){
+			res.render('room',{ title:room.title,roomid:room.id } );
+		}else{
+			res.render('login',{ title:room.title,roomid:room.id } );
+		}
 	}else{
-		res.render('index.ejs', { title:"Code Share",user:user.name });
+		res.render('index', { title: 'Code Share',error:'Room not exists.' });
 	}
 });
+
+app.post('/login',function(req,res){
+	var room=codeshare.getRoom(req.body.roomid);
+	if(room){
+		var user=room.userlist.add(req.body.name)
+		req.session.userid=user.id;
+		res.redirect('/room-'+room.id);
+	}else{
+		res.render('index', { title: 'Code Share',error:'Room not exists.' });
+	}
+});
+
+
+// app.get('/', function(req, res){
+// 	var userid=req.session.userid;
+// 	var user=room.userlist.get(userid);
+// 	if( user==undefined ){
+// 		res.render('login.ejs', { title:"Code Share" });
+// 	}else{
+// 		res.render('index.ejs', { title:"Code Share",user:user.name });
+// 	}
+// });
 
 
 //app.get('/users', user.list);
@@ -118,60 +104,9 @@ var io=socketio.listen(server);
 
 
 var sessionSockets=new SessionSockets(io,store,parseCookie);
-room.listen(io,sessionSockets);
+//room.listen(io,sessionSockets);
 
 server.listen(app.get('port'),function(){
 	console.log('Express server listening on port ' + app.get('port'));
 });
-
-
-
-// sessionSockets.on('connection',function(err,client,session){
-
-// 	if(err){
-// 		console.log(err);
-// 	}else{
-
-// 		if( session && ('userid' in session) ) {
-// 			setClient(client,session);
-
-// 	        var user=users.get(session.userid);
-// 	        var data={
-// 	        	owner:users.owner,
-// 	        	list:users.names()
-// 	        };
-// 	        // 自分に送る
-// 			client.emit("login",{data:user});
-
-// 			// 全員に送る
-// 			io.sockets.emit("userlist",{data:data});
-
-// 	        // 自分に送る
-// 			client.emit("document",{data:document.getValue()});
-// 		}
-// 	}
-// })
-
-// function setClient(client,session){
-
-// 	var user=users.get(session.userid);
-
-// 	client.on('edit', function(e){
-// 		document.applyDeltas([e.data]);
-// 		// 自分以外に送る
-// 		client.broadcast.emit("edit",{data : e.data });
-// 	});
-
-// 	client.on('disconnect', function () {
-// 		users.remove( user );
-//         var data={
-//         	owner:users.owner,
-//         	list:users.names()
-//         };
-
-// 		// 全員に送る
-// 		io.sockets.emit("userlist",{data:data});
-// 	});
-
-// }
 
