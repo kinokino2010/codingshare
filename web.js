@@ -3,6 +3,8 @@
  * Module dependencies.
  */
 
+var appname = 'Coding Share';
+
 var express = require('express');
 var routes = require('./routes');
 var http = require('http');
@@ -50,7 +52,10 @@ if ('development' == app.get('env')) {
 // 	res.redirect('/');
 // });
 
-app.get('/', routes.index);
+app.get('/', function(req,res){
+	res.render('index', { title: appname,error:"" });
+});
+
 app.post('/create', function(req,res){
 	var room=codeshare.create(req.body.roomtitle);
 	room.listen(io,sessionSockets);
@@ -68,7 +73,7 @@ app.get(/^\/room\-([0-9a-z]+)/,function(req,res){
 			res.render('login',{ title:room.title,roomid:room.id } );
 		}
 	}else{
-		res.render('index', { title: 'Code Share',error:'Room not exists.' });
+		res.render('index', { title: appname,error:'Room not exists.' });
 	}
 });
 
@@ -79,7 +84,7 @@ app.post('/login',function(req,res){
 		req.session.userid=user.id;
 		res.redirect('/room-'+room.id);
 	}else{
-		res.render('index', { title: 'Code Share',error:'Room not exists.' });
+		res.render('index', { title: appname,error:'Room not exists.' });
 	}
 });
 

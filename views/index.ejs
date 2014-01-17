@@ -20,11 +20,15 @@
   </head>
   <body>
     <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
-    <p>新しい部屋を作る</p>
+        <% if(error){ %>
+        <div class="alert alert-error" style=''>
+          <%= error %>
+        </div>    
+        <% } %>
+    <p>Create new room</p>
     <form class="form-inline" method='post' action='/create' onSubmit='return check();'>
-      <input type="text" id="roomtitle" name='roomtitle' placeholder="部屋の名前">
-      <button type="submit" class="btn">作成</button>
+      <input type="text" id="roomtitle" name='roomtitle' placeholder="Room name">
+      <button type="submit" class="btn">Create</button>
     </form>
     </body>
 </html>
