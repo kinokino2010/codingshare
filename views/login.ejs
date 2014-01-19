@@ -3,13 +3,15 @@
   <head>
     <title><%= title %></title>
     <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
   </head>
   <body>
-    <h1><%= title %></h1>
+    <h1>Room Entrance</h1>
     <p>Welcome to <%= title %></p>
-    <form method='post' action='login' name='form1'>
+    <form class="form-inline" method='post' action='login' name='form1'>
     	Enter your name : <input type='text' name='name'>
       <input type='hidden' name='roomid' value='<%= roomid %>'>
+      <button type="submit" class="btn">Enter</button>
     </form>
   </body>
 </html>

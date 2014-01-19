@@ -232,7 +232,7 @@
         return p1.row - p2.row || p1.column - p2.column;
     };
 
-    var Range = exports.Range;
+    exports.Range = Range;
 
     var Document = function(text) {
         this.$lines = [];

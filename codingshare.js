@@ -144,6 +144,15 @@
 		        }
 			});
 
+			socket.on('chat',function(e){
+				var data={
+					name:user.name,
+					text:e.data.text
+				};
+				socket.emit("chat",{data:data});
+				socket.broadcast.emit("chat",{data:data});
+			});
+
 			socket.on('disconnect', function () {
 		        console.log(this_.id,"recv","disonnect");
 				this_.userlist.remove( user );
@@ -152,11 +161,17 @@
 					list:this_.userlist.names()
 				};
 
+				if( this_.userlist.count==0 ){
+					exports.removeRoom(this_);
+				}
+
 				// 全員に送る
 		        console.log(this_.id,"emit","userlist");
 				socket.emit("userlist",{data:data});
 				socket.broadcast.emit("userlist",{data:data});
 			});
+
+
 		};
 
 	}).call(Room.prototype);
@@ -176,7 +191,7 @@
 
 			this.roomlist[room.id]=room;
 
-			console.log('create room : '+room.title);
+			console.log('create room : '+room.id);
 
 			return room;
 		};
@@ -188,7 +203,7 @@
 		}
 		this.remove=function(room){
 			if( room.id in this.roomlist){
-				console.log('remove room : '+room.title);
+				console.log('remove room : '+room.id);
 				delete this.roomlist[room.id];
 			}
 		}
@@ -202,7 +217,11 @@
 
 	exports.getRoom=function(id){
 		return roomlist.get(id);
-	}
+	};
+
+	exports.removeRoom=function(room){
+		roomlist.remove(room);
+	};
 
 //	exports.Room = Room;
 
